@@ -1,64 +1,197 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState } from 'react';
+import { ModeToggle, SearchMode } from '@/components/ModeToggle';
+import { SearchForm } from '@/components/SearchForm';
+import { ResultsSummary } from '@/components/ResultsSummary';
+import { DeveloperCard } from '@/components/DeveloperCard';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import type { EvidenceCard, SearchResponse } from '@/lib/types';
+
+type SearchError = '429' | '503' | 'search_failed' | 'invalid_url';
 
 export default function Home() {
+  const [mode, setMode] = useState<SearchMode>('search');
+  
+  // Search State
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<SearchError | null>(null);
+  const [modeMismatchHint, setModeMismatchHint] = useState<string | null>(null);
+  const [hasEverSearched, setHasEverSearched] = useState(false);
+
+  // Abort controller for enrich requests
+  const abortRef = React.useRef<AbortController | null>(null);
+  
+  // Search Results
+  const [handles, setHandles] = useState<string[]>([]);
+  const [total, setTotal] = useState<number>(0);
+  
+  // Enrichment State
+  const [isEnriching, setIsEnriching] = useState(false);
+  // Store cards by handle to maintain rank order
+  const [enrichedCards, setEnrichedCards] = useState<Record<string, EvidenceCard | null>>({});
+
+  const enrichHandle = async (handle: string, abortSignal: AbortSignal) => {
+    try {
+      const res = await fetch(`/api/enrich/${handle}`, { signal: abortSignal });
+      if (!res.ok) {
+        throw new Error('Enrichment temporary failure');
+      }
+      if (abortSignal.aborted) return;
+      const card = await res.json() as EvidenceCard;
+      if (abortSignal.aborted) return;
+      setEnrichedCards(prev => ({ ...prev, [handle]: card }));
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      if (abortSignal.aborted) return;
+      // Synthesize degraded card on 5xx or fetch failure
+      setEnrichedCards(prev => ({
+        ...prev,
+        [handle]: {
+          github_handle: handle,
+          summary: null,
+          signals: [],
+          last_verified_at: new Date().toISOString(),
+          error: 'unavailable'
+        }
+      }));
+    }
+  };
+
+  const handleSearchSubmit = async (query: string) => {
+    // Cancel any previous enrichments
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
+
+    // Reset state
+    setHasEverSearched(true);
+    setIsSearching(true);
+    setSearchError(null);
+    setModeMismatchHint(null);
+    setHandles([]);
+    setTotal(0);
+    setEnrichedCards({});
+    setIsEnriching(false);
+
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+
+      if (res.status === 429) {
+        setSearchError('429');
+        setIsSearching(false);
+        return;
+      }
+      if (res.status === 503) {
+        setSearchError('503');
+        setIsSearching(false);
+        return;
+      }
+      if (!res.ok) {
+        setSearchError('search_failed');
+        setIsSearching(false);
+        return;
+      }
+
+      const data = await res.json() as SearchResponse;
+      setHandles(data.handles);
+      setTotal(data.total);
+
+      // Check mode mismatch using server response
+      if (mode === 'search' && (data.detectedMode === 'profile' || data.detectedMode === 'repo')) {
+        setModeMismatchHint('That looks like a GitHub URL — switching to Similarity mode behavior.');
+      } else if (mode === 'similar' && data.detectedMode === 'nl') {
+        setModeMismatchHint('That looks like a search query — switching to Search mode.');
+      }
+
+      setIsSearching(false);
+
+      if (data.handles.length > 0) {
+        setIsEnriching(true);
+        const topHandles = data.handles.slice(0, 5);
+        
+        // Initialize keys
+        const initialCards: Record<string, null> = {};
+        topHandles.forEach(h => initialCards[h] = null);
+        setEnrichedCards(initialCards);
+
+        // Fetch parallel
+        await Promise.allSettled(
+          topHandles.map(handle => enrichHandle(handle, signal))
+        );
+        setIsEnriching(false);
+      }
+
+    } catch (err: unknown) {
+      setSearchError('search_failed');
+      setIsSearching(false);
+    }
+  };
+
+  const hasSearched = hasEverSearched && !isSearching && searchError === null;
+  const loadedCount = Object.values(enrichedCards).filter(c => c !== null).length;
+  const targetHandles = handles.slice(0, 5);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-black min-h-screen">
+      <main className="flex flex-1 w-full max-w-3xl flex-col items-center py-16 px-6 sm:px-16 bg-white dark:bg-black sm:items-start">
+        
+        {/* Header & Input */}
+        <div className="w-full flex flex-col items-center sm:items-start gap-4">
+          <h1 className="text-3xl font-bold tracking-tight text-black dark:text-zinc-50 mb-2">
+            GritHunter
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <ModeToggle mode={mode} onChange={setMode} />
+          <SearchForm mode={mode} onSubmit={handleSearchSubmit} isLoading={isSearching} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {/* Global Errors */}
+        {searchError && <ErrorState errorType={searchError} />}
+
+        {/* Post-submit states */}
+        {hasSearched ? (
+          handles.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="w-full">
+              <ResultsSummary 
+                isLoadingSearch={isSearching}
+                isEnriching={isEnriching}
+                loadedCount={loadedCount}
+                totalFound={total}
+                modeMismatchHint={modeMismatchHint}
+              />
+              
+              <div className="w-full flex flex-col gap-4">
+                {targetHandles.map(handle => {
+                  const card = enrichedCards[handle];
+                  return (
+                    <DeveloperCard 
+                      key={handle}
+                      handle={handle}
+                      card={card ?? null}
+                      isLoading={card === null}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )
+        ) : isSearching ? (
+          <ResultsSummary 
+            isLoadingSearch={true}
+            isEnriching={false}
+            loadedCount={0}
+            totalFound={0}
+            modeMismatchHint={null}
+          />
+        ) : null}
+
       </main>
     </div>
   );

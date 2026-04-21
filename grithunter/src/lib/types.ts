@@ -35,4 +35,5 @@ export type EvidenceCard = {
 export type SearchResponse = {
   handles: string[];
   total: number;
+  detectedMode?: 'nl' | 'profile' | 'repo';
 };

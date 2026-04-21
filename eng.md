@@ -22,7 +22,7 @@ _Last updated: 2026-04-21_
 | `POST /api/search` | ✅ **M3 COMPLETE** — 13/13 integration tests passing |
 | `GET /api/enrich/[handle]` | ✅ **M3 COMPLETE** — 11/11 integration tests passing |
 | **Total (all suites)** | **✅ 96/96 passing** |
-| Frontend | ⏳ M4 — Next |
+| Frontend | ✅ **M4 COMPLETE** — search flow, evidence cards, states |
 
 ---
 
@@ -349,5 +349,51 @@ Untracked files: m2review.md, probe_response.py, probe_search.py
 - [x] Live Redis-backed search validated end-to-end
 - [x] M3 committed as single clean commit
 - [x] eng.md current
-- [ ] Push to origin (do before M4 begins)
+- [x] Push to origin (do before M4 begins)
 - [ ] Vercel deploy (do before M4 UI integration)
+
+---
+
+## M4: Frontend Search Experience (2026-04-21)
+
+### Status: ✅ COMPLETE
+
+The M4 frontend iteration is fully implemented. The application architecture orchestrates parallel enrichment while bypassing Vercel Hobby serverless limits.
+
+### Components Added
+- `src/components/ModeToggle.tsx` (Search / Similar to...)
+- `src/components/SearchForm.tsx` (Handles inputs and mode hints)
+- `src/components/ResultsSummary.tsx` (Shows progressive loading state)
+- `src/components/DeveloperCard.tsx` (Renders Perplexity tags + GitHub data)
+- `src/components/SignalTags.tsx` (Color-coded evidence types)
+- `src/components/EmptyState.tsx` (No results)
+- `src/components/ErrorState.tsx` (503, 429, Search Failed, Invalid URL)
+
+### Orchestration
+- Modified `src/app/page.tsx` to handle frontend requests.
+- Makes 1 request to `POST /api/search`
+- Iterates over top 5 handles via `Promise.allSettled`, calling `GET /api/enrich/[handle]` concurrently.
+- Renders results as they return, regardless of which finishes first, while preserving the array rank order defined by Perplexity.
+
+### Tests
+- Added `test/frontend.test.tsx` using `vitest` + `@testing-library/react`.
+- Mocked `fetch` API.
+- Implemented tests for empty state, invalid URL, mode toggling, progressive enrichment rendering, degraded card state, and standard card state.
+
+### Caveats & Engineering Decisions
+- **Server-Driven Mode Hints**: The backend `POST /api/search` explicitly returns a `detectedMode` parameter. If a user tries to pass a repo URL while still technically in "Search" mode, the mode will gracefully switch to similarity behavior backed by a UI toast message, preserving API calls and optimizing user experience.
+- **`AbortController` on Re-Submits**: If a user fires a secondary search while the previous set of cards are still enriching via `/api/enrich/:handle`, the stale parallel fetch requests map to a `ref` via `AbortController` and are killed gracefully, preventing dirty state leaks in rank ordering.
+- **Null Summaries**: Rather than returning an empty `<p>`, developers surfaced by GitHub API validation that lack sufficient web signal return `summary === null`, and the UI gracefully renders an italicized "Limited public signal — fewer sources available" explainer.
+
+---
+
+## M5: Pre-Launch Checklist & Deployment (NEXT)
+
+### Status: ⏳ PLANNED
+
+M5 represents the final deployment pipeline milestone as documented in `TODOS.md` and `design.md`.
+
+**Upcoming Scope:**
+- **Manual End-to-End Validation:** Running real prompts against the production ecosystem to confirm 10s cold-start SLAs and 30s aggregate completion pipelines.
+- **Safety Testing:** Validating Prompt Injection barriers (e.g. "Ignore previous instructions") to ensure the Perplexity Agent maintains formatting and structural integrity.
+- **Vercel Ship:** Creating and configuring the production `.env` securely on Vercel, confirming proper Push-to-Deploy webhooks, and validating Upstash Redis rate limiting under real production IPs.

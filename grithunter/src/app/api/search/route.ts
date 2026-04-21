@@ -161,6 +161,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const response: SearchResponse = {
     handles: validHandles,
     total: validHandles.length,
+    detectedMode: inputType,
   };
 
   return NextResponse.json(response);

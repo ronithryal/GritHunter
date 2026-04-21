@@ -165,6 +165,19 @@ Before writing a line of application code, the architecture was validated with a
 
 ## Current Implementation Status
 
+**Status: Live**
+- The v1 web app is fully implemented without authentication.
+- M4 frontend search and enrichment experience is live with progressive loading.
+- Search uses the Perplexity Agent API + GitHub API + Upstash Redis as defined in the design spec.
+- Rate limiting and daily cost cap enforced in the backend.
+
+### What's Implemented Now
+- **Dual-mode search**: Natural language queries and similarity-by-GitHub URL.
+- **Progressive evidence cards**: Real-time rendering of GitHub profiles with Perplexity-backed evidence signals as fetches resolve.
+- **Backend caps**: Redis handles strict IP-based rate limiting and daily API cost envelopes.
+- **Production-grade edge cases**: Handles Perplexity outages gracefully via degraded caching modes without blocking parallel fetch pipelines.
+
+
 ```
 grithunter/
 ├── src/
@@ -197,8 +210,8 @@ grithunter/
 | `POST /api/search` route | ✅ Complete (M3) — 13 tests passing |
 | `GET /api/enrich/[handle]` route | ✅ Complete (M3) — 11 tests passing |
 | **Total Test Suite** | **✅ 96/96 tests passing** |
-| Frontend (search + results) | ⏳ M4 — Planned (Next) |
-| Vercel deployment | ⏳ Planned |
+| Frontend (search + results) | ✅ Complete (M4) — 8 tests passing |
+| Vercel deployment | ⏳ M5 — Planned (Next) |
 
 ---
 
