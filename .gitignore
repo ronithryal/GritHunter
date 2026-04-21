@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Internal tooling state (not product code)
+.claude/
+.gstack/
+
+# Environment secrets — NEVER commit these
+grithunter/.env.local
+grithunter/.env*.local
+
+# Next.js build artifacts
+grithunter/.next/
+grithunter/out/
+
+# Dependencies
+grithunter/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
