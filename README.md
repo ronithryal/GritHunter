@@ -170,17 +170,20 @@ grithunter/
 ├── src/
 │   ├── lib/
 │   │   ├── classifyInput.ts        ✅  6 tests — input mode classifier
-│   │   ├── parseEnrichment.ts      ✅ 16 tests — fenced JSON parser + fallback
+│   │   ├── parseEnrichment.ts      ✅ 18 tests — fenced JSON parser + fallback
 │   │   ├── topLanguages.ts         ✅  9 tests — GitHub repo language aggregation
 │   │   ├── rateLimitCheck.ts       ✅ 10 tests — Redis rate limit + spend cap
-│   │   └── perplexityClient.ts     ✅  agentSearch() + agentEnrich() — single HTTP layer
+│   │   ├── perplexityClient.ts     ✅  7 tests — agentSearch() + agentEnrich()
+│   │   ├── extractHandles.ts       ✅ 15 tests — robust handle extractor (4 formats)
+│   │   ├── githubClient.ts         ✅ Thin wrapper for GitHub REST API v3
+│   │   └── types.ts                ✅ Shared EvidenceCard + SearchResponse types
 │   └── app/api/
-│       ├── search/                 ⏳ Next
-│       └── enrich/[handle]/        ⏳ Planned
+│       ├── search/                 ✅ POST /api/search — 13 integration tests
+│       └── enrich/[handle]/        ✅ GET /api/enrich/[handle] — 11 integration tests
 └── ...
 ```
 
-**41 / 41 unit tests passing.** Core library layer is complete.
+**96 / 96 tests passing.** Routes and core library are complete. Verified against live API.
 
 ---
 
@@ -190,11 +193,11 @@ grithunter/
 |-----------|--------|
 | Pre-condition gate | ✅ Passed |
 | Project scaffold | ✅ Next.js + Vitest + Upstash + Zod |
-| Core library layer | ✅ 41/41 tests |
-| `POST /api/search` route | ⏳ In progress |
-| `GET /api/enrich/[handle]` route | ⏳ Planned |
-| Frontend (search + results) | ⏳ Planned |
-| First working end-to-end flow | ⏳ Planned |
+| Core library layer | ✅ 72/72 unit/lib tests passing |
+| `POST /api/search` route | ✅ Complete (M3) — 13 tests passing |
+| `GET /api/enrich/[handle]` route | ✅ Complete (M3) — 11 tests passing |
+| **Total Test Suite** | **✅ 96/96 tests passing** |
+| Frontend (search + results) | ⏳ M4 — Planned (Next) |
 | Vercel deployment | ⏳ Planned |
 
 ---

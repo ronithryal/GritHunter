@@ -21,7 +21,7 @@ _Last updated: 2026-04-21_
 | `githubClient.ts` | ✅ Implemented (no unit tests — covered by route integration tests) |
 | `POST /api/search` | ✅ **M3 COMPLETE** — 13/13 integration tests passing |
 | `GET /api/enrich/[handle]` | ✅ **M3 COMPLETE** — 11/11 integration tests passing |
-| **Total (all suites)** | **✅ 94/94 passing** |
+| **Total (all suites)** | **✅ 96/96 passing** |
 | Frontend | ⏳ M4 — Next |
 
 ---
