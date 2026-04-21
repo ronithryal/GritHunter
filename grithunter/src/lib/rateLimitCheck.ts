@@ -111,9 +111,8 @@ export async function checkRateLimit(
   }
 
   if (count > maxQueries) {
-    // Decrement the counter we just over-incremented, then reject
-    // (We don't want rogue requests to permanently inflate the count)
-    await redis.incr(rlKey); // no-op counter fix not needed; count is already over
+    // Counter is already over limit — just reject. The TTL will expire the key naturally.
+    // (The previous incr already consumed a slot; no further writes needed here.)
     return {
       allowed: false,
       reason: 'rate_limit',

@@ -131,6 +131,30 @@ describe('parseEnrichment', () => {
     expect(result.signals[0]).not.toHaveProperty('url');
   });
 
+  // ── Regression: URL trim fix (Bug #2 from gstack review) ──────────────────
+  it('trims whitespace from url before validation and stores the trimmed value', () => {
+    const json = JSON.stringify({
+      github_handle: 'dev1',
+      summary: 'Test',
+      signals: [{ type: 'repo', label: 'my-repo', url: '  https://github.com/dev1/repo  ' }],
+    });
+
+    const result = parseEnrichment(json, 'dev1');
+    // URL should be kept (https:// after trim) and stored without leading/trailing spaces
+    expect(result.signals[0].url).toBe('https://github.com/dev1/repo');
+  });
+
+  it('drops a url that is only whitespace', () => {
+    const json = JSON.stringify({
+      github_handle: 'dev1',
+      summary: 'Test',
+      signals: [{ type: 'repo', label: 'my-repo', url: '   ' }],
+    });
+
+    const result = parseEnrichment(json, 'dev1');
+    expect(result.signals[0]).not.toHaveProperty('url');
+  });
+
   // ── From test-plan.md: signals array > 6 → truncated to 6 ─────────────────
   it('truncates signals array to a maximum of 6', () => {
     const signals = Array.from({ length: 10 }, (_, i) => ({

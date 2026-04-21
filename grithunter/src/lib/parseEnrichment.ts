@@ -64,8 +64,9 @@ function normalizeSignals(raw: unknown): SignalTag[] {
     const type: SignalType = isValidSignalType(item.type) ? item.type : 'repo';
     const signal: SignalTag = { type, label };
 
-    if (isValidUrl(item.url)) {
-      signal.url = item.url;
+    const rawUrl = typeof item.url === 'string' ? item.url.trim() : item.url;
+    if (isValidUrl(rawUrl)) {
+      signal.url = rawUrl; // trimmed value stored, not the original
     }
     // Invalid or absent url: omit the url field entirely (silent drop per spec)
 

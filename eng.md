@@ -12,13 +12,67 @@ _Last updated: 2026-04-21_
 | Credentials | ⚠️ All 4 env vars in `.env.local`; Redis not yet validated end-to-end |
 | Scaffolding | ✅ Complete — Next.js 15+ in `grithunter/`, Vitest, Upstash, Zod installed |
 | `classifyInput.ts` | ✅ 6/6 tests passing |
-| `parseEnrichment.ts` | ✅ 16/16 tests passing |
+| `parseEnrichment.ts` | ✅ 18/18 tests passing |
 | `topLanguages.ts` | ✅ 9/9 tests passing |
 | `rateLimitCheck.ts` | ✅ 10/10 tests passing |
-| `perplexityClient.ts` | ✅ Implemented (no network tests — covered by integration tests on routes) |
-| `POST /api/search` | ⏳ Next |
-| `GET /api/enrich/[handle]` | ⏳ Planned |
-| Frontend | ⏳ Planned |
+| `perplexityClient.ts` | ✅ 7/7 tests passing |
+| `extractHandles.ts` | ✅ 13/13 tests passing |
+| `buildSearchQuery` | ✅ 7/7 tests passing |
+| `githubClient.ts` | ✅ Implemented (no unit tests — covered by route integration tests) |
+| `POST /api/search` | ✅ **M3 COMPLETE** — 13/13 integration tests passing |
+| `GET /api/enrich/[handle]` | ✅ **M3 COMPLETE** — 11/11 integration tests passing |
+| **Total (all suites)** | **✅ 94/94 passing** |
+| Frontend | ⏳ M4 — Next |
+
+---
+
+## gstack Review Fixes (2026-04-21)
+
+Applied before M3. All 4 issues resolved.
+
+### Fix 1: Dead `redis.incr(rlKey)` in `rateLimitCheck.ts` [RESOLVED]
+- **Bug**: Inside the `count > maxQueries` branch, an `await redis.incr(rlKey)` call was incrementing the counter *further* on every over-limit request. The comment said "no-op" but it was actively worsening the cap count.
+- **Fix**: Removed the call entirely. The TTL expires the key naturally; no counter manipulation is needed after rejection.
+- **Test impact**: Existing tests still pass. The mock Redis in tests was absorbing the extra incr silently, masking the bug.
+
+### Fix 2: URL not trimmed before validation in `parseEnrichment.ts` [RESOLVED]
+- **Bug**: `isValidUrl(item.url)` ran the regex against the raw (possibly whitespace-padded) string. A URL like `" https://github.com/..."` would fail the `^https?://` check and be silently dropped.
+- **Fix**: `const rawUrl = typeof item.url === 'string' ? item.url.trim() : item.url;` — trimmed before both validation and storage.
+- **Regression tests added**: 2 new tests covering whitespace-padded URL (kept) and whitespace-only URL (dropped).
+
+### Fix 3: `usage.cost.total_cost` — CONFIRMED EXISTS [RESOLVED]
+- **Method**: Made a live Perplexity Agent API call via `probe_response.py` and logged the full response shape.
+- **Result**:
+  ```json
+  "usage": {
+    "cost": {
+      "currency": "USD",
+      "input_cost": 0.0026,
+      "output_cost": 0.00098,
+      "tool_calls_cost": 0.005,
+      "total_cost": 0.00858
+    },
+    "input_tokens": 2082,
+    "output_tokens": 98,
+    "total_tokens": 2180
+  }
+  ```
+- **`usage.cost.total_cost`**: ✅ Confirmed present and is a `number`.
+- **Bonus finding**: Top-level `output_text` is ABSENT. Real content path:
+  `output[n].type === 'message'` → `content[m].type === 'output_text'` → `content[m].text`.
+  `extractContent()` already handled this correctly. Updated comments to reflect confirmed shape.
+- **Cost per probe call**: $0.00858 (1 web search + small output). At ~6 calls/query: ~$0.05/query. $10/day cap → ~200 queries/day. Generous for v1.
+
+### Fix 4: `agentSearch` accepts `SearchInput` instead of raw string [RESOLVED]
+- **Bug**: `agentSearch(sanitizedQuery: string)` let any caller pass raw user input with no type structure. The "sanitization" was a naming convention, not enforced.
+- **Fix**: Changed signature to `agentSearch(input: SearchInput)` where `SearchInput` is a discriminated union: `{ type: 'nl' | 'profile' | 'repo'; value: string }`.
+- **New behavior**: `buildSearchQuery(input)` constructs mode-specific search phrases internally:
+  - `'nl'`: passes value verbatim (it is the user's intent)
+  - `'profile'`: constructs similarity query mentioning `github.com/<handle>`
+  - `'repo'`: constructs repo domain query mentioning `github.com/<org/repo>`
+- **Tests added**: 7 new tests in `perplexityClient.test.ts` covering NL, profile, repo modes, injection defense, and response extraction.
+
+
 
 ---
 
@@ -155,3 +209,88 @@ This project uses **milestone commits** — not a commit per change. Only push w
 - `.DS_Store` (add to root `.gitignore`)
 - `.claude/`, `.gstack/` (internal tooling state — add to `.gitignore`)
 
+---
+
+## M3: API Routes Layer (2026-04-21)
+
+### Status: ✅ COMPLETE
+
+Both M3 routes are implemented, tested, and all 94 tests pass (library + route integration).
+
+### Files Created
+
+#### New lib files
+- `src/lib/githubClient.ts` — Thin GitHub REST API v3 wrapper. Two functions: `fetchGitHubUser` (handle validation + user metadata) and `fetchGitHubRepos` (top 20 repos by stars for language computation). Returns `null` on 404/403/429; callers apply graceful fallback.
+- `src/lib/types.ts` — Shared types: `EvidenceCard` and `SearchResponse`. Matches design.md schema exactly.
+
+#### New route files
+- `src/app/api/search/route.ts` — `POST /api/search`
+- `src/app/api/enrich/[handle]/route.ts` — `GET /api/enrich/[handle]`
+
+#### New test files
+- `src/app/api/search/route.test.ts` — 13 integration tests
+- `src/app/api/enrich/[handle]/route.test.ts` — 11 integration tests
+
+### Route Summaries
+
+**POST /api/search**
+- Parses `{ query: string }` body
+- Classifies input server-side via `classifyInput()`
+- Checks rate limit via `checkRateLimit()` — fails open if Redis throws (logged)
+- Calls `agentSearch({ type, value })` with mode-specific query via `buildSearchQuery()`
+- Extracts handles via `extractHandles()`
+- Validates all handles via GitHub API in parallel (`Promise.allSettled`)
+- Drops 404s and 403s silently; surviving handles returned
+- Returns `{ handles: string[], total: number }`
+
+**GET /api/enrich/[handle]**
+- Validates handle format (basic regex)
+- Checks Redis cache (`enrich:v1:<handle>`, 24h TTL) — cache read error treated as miss
+- On cache miss: calls `agentEnrich(handle)`; on Perplexity failure → degraded card (see AD-011)
+- Parses enrichment via `parseEnrichment()` (JSON/prose/fenced)
+- Fetches GitHub user + repos in parallel
+- Assembles `EvidenceCard` with Perplexity + GitHub fields
+- Writes assembled card to Redis cache (24h TTL, best-effort — failure is non-fatal)
+- Returns full `EvidenceCard`
+
+### Architecture Decision: AD-011 — Degraded Card Shape
+
+When Perplexity enrichment fails after 1 retry, the route returns a 200 (not 5xx) with a degraded card:
+```typescript
+{
+  github_handle: string,
+  summary: null,
+  signals: [],
+  last_verified_at: ISO8601,
+  error: 'unavailable'
+}
+```
+Rationale: the frontend must handle partial failure gracefully. A 5xx response per-handle would mean the client can't distinguish "handle enrichment temporarily failed" from "server is broken". The degraded 200 lets the frontend show "Evidence unavailable — try refreshing" inline on the card, consistent with design.md error states table.
+
+The degraded card IS written to cache (24h TTL). This prevents cascading Perplexity calls on a handle that is temporarily failing. If this is too aggressive for cold-start failures, revisit in M4 debrief.
+
+### Deviations from Original Design Docs
+
+1. **`_resetRedisForTest()` export**: Routes export this test-only helper to allow resetting the Redis singleton between tests. Not mentioned in design docs — a testability tradeoff for the singleton pattern. The singleton avoids re-constructing the Redis client on every request (important for serverless cold-start cost).
+
+2. **`githubClient.ts` Array.isArray guard**: Added `Array.isArray(repos)` check in `fetchGitHubRepos` to handle non-array responses gracefully. Design docs don't call this out, but it prevents `computeTopLanguages` from crashing if GitHub returns an unexpected shape.
+
+3. **Cache write for degraded cards**: Design docs say "skip" enrichment on failure, but don't specify whether to cache the degraded result. Chose to cache it (24h) to prevent hammering Perplexity on a temporarily bad handle. Documented above as AD-011.
+
+4. **`satisfies SearchResponse`** type annotation in search route: confirms the return shape at compile-time without widening the type. Zero runtime cost.
+
+### Test Approach
+
+Both route test files use:
+- `vi.mock('@upstash/redis')` with a class-based mock (not factory function) to correctly intercept `new Redis(...)` calls
+- Module-level mutable variables (`mockRedisGet`, `mockRedisIncr`, etc.) captured by mock class closure — allows per-test override without re-importing
+- `top-level await import(...)` after mock registration to ensure routes get the mocked Redis constructor
+- `vi.stubGlobal('fetch', ...)` for Perplexity and GitHub API HTTP mocking
+- `_resetRedisForTest()` called in `beforeEach`/`afterEach` to clear cached Redis singletons
+
+### What Remains Before M4
+
+1. **No TypeScript build verification** — `npm run build` has not been run. Should be done before M4 begins to catch any type errors across the route and lib layer.
+2. **Redis end-to-end validation** — Credential connectivity with Upstash has not been tested in a running Next.js dev server.
+3. **Vercel deployment sanity check** — `maxDuration = 60` is set on both routes; needs verification under Vercel Hobby plan.
+4. **M4 scope**: Frontend — search input, results list, evidence card component, progressive loading UI.

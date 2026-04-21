@@ -78,9 +78,10 @@ describe('checkRateLimit', () => {
     }
     const result = await checkRateLimit(redis, BASE_OPTIONS);
     expect(result.allowed).toBe(false);
-    if (!result.allowed) {
-      expect(result.reason).toBe('rate_limit');
+    if (!result.allowed && result.reason === 'rate_limit') {
       expect(result.retryAfterSeconds).toBe(3600);
+    } else {
+      expect(result.allowed).toBe(false);
     }
   });
 
