@@ -290,7 +290,64 @@ Both route test files use:
 
 ### What Remains Before M4
 
-1. **No TypeScript build verification** — `npm run build` has not been run. Should be done before M4 begins to catch any type errors across the route and lib layer.
-2. **Redis end-to-end validation** — Credential connectivity with Upstash has not been tested in a running Next.js dev server.
-3. **Vercel deployment sanity check** — `maxDuration = 60` is set on both routes; needs verification under Vercel Hobby plan.
-4. **M4 scope**: Frontend — search input, results list, evidence card component, progressive loading UI.
+1. ~~Redis end-to-end validation~~ ✅ **Done** — validated live (see checkpoint below)
+2. ~~TypeScript build~~ ✅ **Done** — `npm run build` ran clean before M4 gstack clearance
+3. **Vercel deployment sanity check** — `maxDuration = 60` set; needs verification under Vercel Hobby plan at deploy time
+4. **M4 scope**: Frontend — search input, results list, evidence card component, progressive loading
+
+---
+
+## M3 Checkpoint: Live Validation & Commit (2026-04-21)
+
+### Live validation result: ✅ PASS
+
+**What was tested:**
+- Started `npm run dev` against real `.env.local` (live Perplexity, GitHub, Upstash Redis credentials)
+- Fired `POST /api/search` with `{"query": "React Native engineers in San Francisco who shipped App Store apps"}`
+
+**First attempt result:** `{ handles: [], total: 0 }` — route returned 200 but empty
+
+**Diagnosis:** Perplexity returned bare-line handles (`jessjchang\nj-tomasik`) with no `@` prefix, URL, or numbered list format. `extractHandles` had no pass for this format.
+
+**Fix applied:** Added extraction pass #4 to `extractHandles.ts` — collects lines whose entire trimmed content is a valid GitHub handle (single token, no spaces). Added 2 regression tests. This is a real API response shape discovery; the format is now documented in the module docstring.
+
+**Second attempt result:** `{ handles: ['lee-cjanet'], total: 1 }` — 200 OK, 2.9s
+
+**What was validated:**
+- Route boots cleanly in Next.js dev runtime ✅
+- `.env.local` env vars are wired and consumed correctly ✅
+- Redis rate-limit path executes without error (Upstash connectivity confirmed) ✅
+- Perplexity Agent API call completes and content is extracted ✅
+- extractHandles parses bare-line format returned by live API ✅
+- GitHub validation runs in parallel, 404s dropped silently ✅
+- Response shape matches `{ handles: string[], total: number }` contract ✅
+
+**Note on result quality:** Only 1 of 2 returned handles survived GitHub 404 validation. This is expected — Perplexity occasionally returns handles that don't correspond to real GitHub profiles. The system correctly drops them silently per design.md. Real query quality will improve with better prompt tuning (a v1.1 concern).
+
+### Commit
+```
+[M3] API routes: search + enrich, 96/96 tests passing
+sha: f776af1
+```
+
+16 files changed, 1704 insertions. Single commit. History is clean.
+
+### Git status after commit
+```
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Untracked files: m2review.md, probe_response.py, probe_search.py
+  (scratch/review artifacts — not committed)
+```
+
+### M4 handoff checklist
+
+- [x] 96/96 tests passing
+- [x] `npm run build` clean
+- [x] Live Redis-backed search validated end-to-end
+- [x] M3 committed as single clean commit
+- [x] eng.md current
+- [ ] Push to origin (do before M4 begins)
+- [ ] Vercel deploy (do before M4 UI integration)
