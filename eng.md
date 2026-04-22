@@ -195,7 +195,7 @@ This project uses **milestone commits** — not a commit per change. Only push w
 | M4 | **First working search flow** | Frontend connected to routes; real query returns real cards end-to-end | ✅ Done |
 | M5 | **Search quality** | Tier/notability language, domain expansion fallback, code quality enrichment rubric, eval fixture | ✅ Done |
 | M6 | **Search intelligence** | Geo-constraint scarcity surfacing, prompt tuning, product feedback loop — ongoing | ⏳ In progress |
-| M7 | **Vercel deployment** | Production env, maxDuration validation, Redis under real IPs, live URL in README | ⏳ Next |
+| M7 | **Vercel deployment** | Production env, maxDuration validation, Redis under real IPs, live URL in README | ✅ Done |
 | M8 | **Design and screens** | Evidence card visual hierarchy, typography, responsive layout, loading skeletons | ⏳ Planned |
 
 ### Push Rules
@@ -510,18 +510,20 @@ Ongoing search quality and product intelligence layer. Absorbs feedback-driven p
 
 ---
 
-## M7: Vercel Deployment (NEXT)
+## M7: Vercel Deployment (DONE)
 
-### Status: ⏳ NEXT
+### Status: ✅ DONE
 
-Deploy after the product is worth sharing.
+**Live at https://grithunter.vercel.app**
 
-**Planned scope:**
-- Configure production `.env` on Vercel (PERPLEXITY_API_KEY, GITHUB_TOKEN, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)
-- Validate `maxDuration = 60` under Vercel Hobby plan
-- Confirm push-to-deploy webhook on merge to main
-- Validate Upstash Redis rate limiting under real production IPs
-- Manual E2E against real APIs: first card within 10s, all 5 within 30s
+**Shipped:**
+- All 4 production env vars configured on Vercel (PERPLEXITY_API_KEY, GITHUB_TOKEN, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)
+- `maxDuration = 60` set on both API routes — validated under Vercel Hobby plan
+- Push-to-deploy wired: merges to `main` auto-deploy via Vercel git integration
+- Upstash Redis working under real production IPs (rate limiting and enrichment cache active)
+- E2E validated: 9 handles returned in 7.3s for "React Native engineers who shipped App Store apps"; brentvatne card loads from cache in 165ms
+
+**Deployment note:** `.env.local` stores values with surrounding double quotes. When pushing env vars to Vercel, use `source .env.local && printf '%s' "$VAR" > /tmp/f.txt && vercel env add VAR production < /tmp/f.txt` — not the Python file reader, which preserves the literal quote characters.
 
 ---
 

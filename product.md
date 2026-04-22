@@ -132,7 +132,7 @@ When geo-constrained queries return few results (e.g. "React Native engineers in
 | M4 | Frontend | Search UI, progressive loading, evidence cards | ✅ Done |
 | M5 | Search quality | Tier language, enrichment rubric, eval fixture | ✅ Done |
 | M6 | Search intelligence | Scarcity hints, prompt tuning, feedback-driven improvements | ⏳ In progress |
-| M7 | Vercel deployment | Live URL, production env, rate limiting validated | ⏳ Next |
+| M7 | Vercel deployment | Live URL, production env, rate limiting validated | ✅ Done |
 | M8 | Design and screens | Evidence card visual hierarchy, typography, responsive layout | ⏳ Planned |
 
 M6 stays open — it absorbs feedback. M7 ships when the product is worth sharing publicly.
