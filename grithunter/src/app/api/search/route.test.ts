@@ -59,7 +59,15 @@ function githubUserOk(handle: string) {
   return {
     ok: true,
     status: 200,
-    json: async () => ({ login: handle, followers: 100, public_repos: 20 }),
+    json: async () => ({ login: handle, type: 'User', followers: 100, public_repos: 20 }),
+  };
+}
+
+function githubOrgOk(handle: string) {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({ login: handle, type: 'Organization', followers: 0, public_repos: 10 }),
   };
 }
 
@@ -193,6 +201,21 @@ describe('POST /api/search', () => {
     expect(res.status).toBe(200);
     expect(body.handles).toContain('kmagiera');
     expect(body.handles).not.toContain('brentvatne');
+  });
+
+  it('filters out organization accounts from results', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(perplexityResponse('@brentvatne\n@cloudposse'))
+      .mockResolvedValueOnce(githubUserOk('brentvatne'))
+      .mockResolvedValueOnce(githubOrgOk('cloudposse')),
+    );
+
+    const res = await POST(makeRequest('Terraform engineers'));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.handles).toContain('brentvatne');
+    expect(body.handles).not.toContain('cloudposse');
   });
 
   it('returns 429 when rate limit is exceeded', async () => {

@@ -17,6 +17,7 @@
 
 export type GitHubUser = {
   login: string;
+  type: 'User' | 'Organization' | 'Bot';
   followers: number;
   public_repos: number;
 };

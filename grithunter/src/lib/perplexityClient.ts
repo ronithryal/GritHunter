@@ -52,7 +52,7 @@ export type SearchInput =
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const AGENT_API_URL = 'https://api.perplexity.ai/v1/agent';
-const DEFAULT_TIMEOUT_MS = 15_000; // 15s per-developer enrichment SLA (design.md)
+const DEFAULT_TIMEOUT_MS = 28_000; // 28s per attempt; 2 attempts + 1s delay = 57s < maxDuration(60)
 const RETRY_DELAY_MS = 1_000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -181,21 +181,26 @@ async function agentPost(
 export function buildSearchQuery(input: SearchInput): string {
   switch (input.type) {
     case 'nl':
-      // Natural language: pass through verbatim — already the user's intent
-      return `${input.value} Return only GitHub handles. Limit 10.`;
-    case 'profile':
-      // Profile similarity: find developers with comparable proof-of-work
       return (
-        `Find software engineers with similar proof-of-work and open-source contributions ` +
-        `to the GitHub developer at github.com/${input.value}. ` +
+        `${input.value}\n` +
+        `Return only individual GitHub developer handles — not organization accounts. ` +
+        `Prioritize developers whose own repositories have earned significant stars (100+). ` +
+        `Limit 10.`
+      );
+    case 'profile':
+      return (
+        `Find individual software engineers (not GitHub organizations) with similar ` +
+        `proof-of-work and open-source contributions to the developer at github.com/${input.value}. ` +
         `Focus on public evidence: repos, packages, blog posts, talks. ` +
+        `Prioritize developers whose own repositories have earned significant stars. ` +
         `Return only GitHub handles. Limit 10.`
       );
     case 'repo':
       return (
-        `Find software engineers who actively work in the same technical domain as ` +
-        `the GitHub repository github.com/${input.value}. ` +
-        `Focus on tech surface area and domain, not the contributor list. ` +
+        `Find individual software engineers (not GitHub organizations) who actively work ` +
+        `in the same technical domain as github.com/${input.value}. ` +
+        `Focus on tech surface area and domain expertise, not the contributor list. ` +
+        `Prioritize developers whose own repositories have earned significant stars. ` +
         `Exclude maintainers of repositories with more than 10k stars. ` +
         `Return only GitHub handles. Limit 10.`
       );

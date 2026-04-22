@@ -196,22 +196,20 @@ grithunter/
 └── ...
 ```
 
-**96 / 96 tests passing.** Routes and core library are complete. Verified against live API.
+**105 / 105 tests passing.** Routes, core library, and frontend complete. Verified against live APIs.
 
 ---
 
-## Near-Term Roadmap
+## Roadmap
 
-| Milestone | Status |
-|-----------|--------|
-| Pre-condition gate | ✅ Passed |
-| Project scaffold | ✅ Next.js + Vitest + Upstash + Zod |
-| Core library layer | ✅ 72/72 unit/lib tests passing |
-| `POST /api/search` route | ✅ Complete (M3) — 13 tests passing |
-| `GET /api/enrich/[handle]` route | ✅ Complete (M3) — 11 tests passing |
-| **Total Test Suite** | **✅ 96/96 tests passing** |
-| Frontend (search + results) | ✅ Complete (M4) — 8 tests passing |
-| Vercel deployment | ⏳ M5 — Planned (Next) |
+| # | Milestone | Status |
+|---|-----------|--------|
+| M1–M2 | Scaffold + core library (41 tests) | ✅ Done |
+| M3 | API routes — search + enrich (24 tests) | ✅ Done |
+| M4 | Frontend — search UI, progressive loading, evidence cards (40 tests) | ✅ Done |
+| M5 | **Search quality** — prompt tuning, re-ranking decision, result evaluation | ⏳ Next |
+| M6 | Design polish — evidence card, UI, responsive layout | ⏳ Planned |
+| M7 | Vercel deployment — production env, rate limiting, E2E validation | ⏳ Planned |
 
 ---
 

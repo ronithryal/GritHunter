@@ -146,10 +146,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // ── 6. Validate handles via GitHub API in parallel ────────────────────────
+  // Drop 404s and organization accounts — results must be individual developers.
   const validationResults = await Promise.allSettled(
     rawHandles.map(async (handle) => {
       const user = await fetchGitHubUser(handle);
-      return user !== null ? handle : null;
+      if (user === null) return null;
+      if (user.type !== 'User') return null;
+      return handle;
     }),
   );
 

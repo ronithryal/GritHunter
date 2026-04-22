@@ -143,7 +143,7 @@ describe('GET /api/enrich/[handle]', () => {
       signals: [],
       last_verified_at: '2024-01-01T00:00:00.000Z',
     };
-    mockRedisGet = vi.fn().mockResolvedValue(JSON.stringify(cachedCard));
+    mockRedisGet = vi.fn().mockResolvedValue(cachedCard); // Upstash auto-deserializes JSON on read
     _resetRedisForTest();
 
     const fetchMock = vi.fn();

@@ -76,9 +76,8 @@ function cacheKey(handle: string): string {
 
 async function readCache(redis: Redis, handle: string): Promise<EvidenceCard | null> {
   try {
-    const raw = await redis.get<string>(cacheKey(handle));
-    if (!raw) return null;
-    return JSON.parse(raw) as EvidenceCard;
+    const card = await redis.get<EvidenceCard>(cacheKey(handle));
+    return card ?? null;
   } catch (err) {
     console.error('[enrich] Cache read failed, treating as miss:', err);
     return null;
@@ -141,8 +140,8 @@ export async function GET(
       last_verified_at: now,
       error: 'unavailable',
     };
-    // Still cache the degraded card for 24h to prevent hammering Perplexity
-    if (redis) await writeCache(redis, handle, degraded);
+    // Cache degraded cards for only 5 min — short enough to retry after a transient timeout
+    if (redis) await redis.set(cacheKey(handle), JSON.stringify(degraded), { ex: 300 });
     return NextResponse.json(degraded);
   }
 

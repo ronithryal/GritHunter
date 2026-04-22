@@ -387,13 +387,88 @@ The M4 frontend iteration is fully implemented. The application architecture orc
 
 ---
 
-## M5: Pre-Launch Checklist & Deployment (NEXT)
+## Post-M4 Hotfixes & Search Quality (2026-04-21)
+
+### Status: ✅ APPLIED
+
+Four issues discovered during first live session against real APIs. All fixed before M5.
+
+### Fix 1: Perplexity enrichment timeout too short [RESOLVED]
+- **Bug**: `DEFAULT_TIMEOUT_MS = 15_000` caused AbortError on ~31s enrichment calls (15s + 1s delay + 15s retry). Affected 2/5 cards consistently.
+- **Fix**: Raised to `28_000ms`. Worst case: 28s + 1s + 28s = 57s, within `maxDuration = 60`.
+- **File**: `src/lib/perplexityClient.ts`
+
+### Fix 2: Degraded card cached for 24h [RESOLVED]
+- **Bug**: AD-011 noted this risk. A transient timeout locked a handle out of enrichment for 24h.
+- **Fix**: Degraded cards now use a 5-minute TTL (`ex: 300`). Full cards keep 24h TTL unchanged.
+- **File**: `src/app/api/enrich/[handle]/route.ts`
+
+### Fix 3: Redis cache double-parse bug [RESOLVED]
+- **Bug**: `readCache` used `redis.get<string>()` then `JSON.parse(raw)`. Upstash auto-deserializes valid JSON on read, so `raw` was already an object. `JSON.parse(object)` coerced to `"[object Object]"` → SyntaxError.
+- **Fix**: Changed to `redis.get<EvidenceCard>()` — Upstash handles deserialization, no manual parse.
+- **File**: `src/app/api/enrich/[handle]/route.ts`
+
+### Fix 4: Organizations appearing in results [RESOLVED]
+- **Bug**: GitHub validation only checked for 404. Organization accounts (e.g. `cloudposse`, `terraform-aws-modules`) passed validation and appeared as developer results.
+- **Fix**: Added `GitHubUser.type` field. Validation now drops any handle where `user.type !== 'User'`.
+- **Files**: `src/lib/githubClient.ts`, `src/app/api/search/route.ts`
+
+### Fix 5: Search prompts not guiding for result quality [RESOLVED]
+- **Bug**: All three `buildSearchQuery` prompts returned only "Return only GitHub handles. Limit 10." with no signal-quality guidance. Perplexity had no incentive to prefer high-signal developers over any account that matches the domain.
+- **Fix**: All three prompts now:
+  - Explicitly request individual developers only (not organizations — belt-and-suspenders alongside Fix 4)
+  - Instruct Perplexity to prioritize developers whose repos have earned significant stars (100+)
+  - Repo-mode prompt retains its existing "exclude maintainers of 10k+ star repos" clause
+- **File**: `src/lib/perplexityClient.ts`
+
+### Architecture Decision: AD-012 — Star weighting lives in the prompt, not in re-ranking
+
+- **Date**: 2026-04-21
+- **Decision**: Star count preference is expressed in the Perplexity search prompt, not as post-hoc re-ranking of GitHub metadata.
+- **Rationale**: AD-009 locks "no re-ranking beyond Perplexity's returned order." The correct lever for result quality is prompt engineering. The GitHub API's `stargazers_count` data (fetched in the enrich route) decorates cards for the user to see but does not change display rank.
+- **Status**: Locked
+
+---
+
+## M5: Search Quality (NEXT)
 
 ### Status: ⏳ PLANNED
 
-M5 represents the final deployment pipeline milestone as documented in `TODOS.md` and `design.md`.
+Search results are functional but need tuning before public launch. M5 is dedicated to making the results genuinely impressive — the kind of output a CTO would screenshot and share.
 
-**Upcoming Scope:**
-- **Manual End-to-End Validation:** Running real prompts against the production ecosystem to confirm 10s cold-start SLAs and 30s aggregate completion pipelines.
-- **Safety Testing:** Validating Prompt Injection barriers (e.g. "Ignore previous instructions") to ensure the Perplexity Agent maintains formatting and structural integrity.
-- **Vercel Ship:** Creating and configuring the production `.env` securely on Vercel, confirming proper Push-to-Deploy webhooks, and validating Upstash Redis rate limiting under real production IPs.
+**Planned scope:**
+- **Prompt iteration:** Test a matrix of real queries across NL, profile, and repo modes. Log raw Perplexity output per query. Tighten prompts based on observed failure modes (wrong domain, orgs slipping through, low-signal handles).
+- **Re-ranking decision:** AD-009 locks out post-hoc re-ranking, but this should be revisited with real data. If GitHub metadata (followers, total stars across repos) consistently predicts result quality, lightweight re-ranking is worth unlocking.
+- **Handle extraction hardening:** Log what Perplexity actually returns on each call. If format drift causes silent empty results, add a fallback extraction pass.
+- **Sonar API evaluation:** Assess whether a cheaper Sonar pre-processing step (query reformulation, domain classification) improves Agent API result quality at lower cost.
+- **Acceptance criteria:** On 5 representative queries, ≥4/5 returned developers have genuine, verifiable proof-of-work. No orgs, no bots, no clearly-off-domain results.
+
+---
+
+## M6: Design Polish (PLANNED)
+
+### Status: ⏳ PLANNED
+
+The evidence card is the product. M6 makes it feel like one.
+
+**Planned scope:**
+- Evidence card visual design — typography hierarchy, signal tag colors, source citation layout
+- Responsive layout (mobile-readable at minimum)
+- Loading skeleton refinement
+- Empty and error states visual polish
+
+---
+
+## M7: Vercel Deployment (PLANNED)
+
+### Status: ⏳ PLANNED
+
+Deploy after the product is worth sharing.
+
+**Planned scope:**
+- Configure production `.env` on Vercel (PERPLEXITY_API_KEY, GITHUB_TOKEN, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)
+- Validate `maxDuration = 60` under Vercel Hobby plan
+- Confirm push-to-deploy webhook on merge to main
+- Validate Upstash Redis rate limiting under real production IPs
+- Manual E2E against real APIs: first card within 10s, all 5 within 30s
+- Prompt injection safety test

@@ -101,5 +101,31 @@ CI/CD: Vercel push-to-deploy on merge to main.
 |------|------|
 | 2026-04-21 | Pre-condition gate passed. Perplexity Agent API confirmed viable for talent discovery. |
 | 2026-04-21 | Scaffolding complete: Next.js in `grithunter/`, Vitest, Upstash, Zod. |
-| 2026-04-21 | `classifyInput.ts` implemented and tested (6/6 tests pass). |
-| 2026-04-21 | Architecture revised: multi-Perplexity-surface model adopted. Agent API remains primary. |
+| 2026-04-21 | Core library complete: input classification, enrichment parsing, rate limiting, Perplexity client. 41/41 tests. |
+| 2026-04-21 | API routes shipped: `POST /api/search` and `GET /api/enrich/[handle]`. 96/96 tests. |
+| 2026-04-21 | Frontend shipped: search flow, progressive card loading, degraded states, mode hints. 104/104 tests. |
+| 2026-04-21 | **Search quality pass:** Organizations are now filtered from results at the GitHub API validation layer. Search prompts updated to bias Perplexity toward high-signal individual developers (repos with significant stars). |
+| 2026-04-21 | **Reliability fixes:** Enrichment timeout raised to 28s per attempt (was 15s — caused ~2/5 cards to show "Evidence unavailable" on slow Perplexity calls). Degraded card cache TTL cut from 24h to 5min so transient failures recover automatically. Redis cache deserialization bug fixed. |
+
+---
+
+## What's Working Today (as of 2026-04-21)
+
+A user can visit the app, type a description like "React Native engineers in San Francisco who shipped App Store apps," and within 30 seconds see up to 5 evidence cards — each with a Perplexity-synthesized paragraph explaining *why* that developer matches, backed by cited public sources. Cards load progressively as they resolve; the first typically appears within 10 seconds.
+
+The system is fully live against real APIs (Perplexity, GitHub, Upstash Redis). Rate limiting and spend caps are active. The app handles degraded states gracefully: if enrichment fails for one developer, that card shows a recoverable error without blocking the other four.
+
+---
+
+## Milestone Roadmap
+
+| # | Milestone | Goal | Status |
+|---|-----------|------|--------|
+| M1–M2 | Scaffold + core library | Foundation, 41 unit tests | ✅ Done |
+| M3 | API routes | Search + enrich pipelines live | ✅ Done |
+| M4 | Frontend | Search UI, progressive loading, evidence cards | ✅ Done |
+| M5 | Search quality | Results good enough to impress on first use | ⏳ Next |
+| M6 | Design polish | Evidence card and UI feel product-grade | ⏳ Planned |
+| M7 | Vercel deployment | Live URL, production env, rate limiting validated | ⏳ Planned |
+
+The order matters. Deploying before M5 means the first person who tries it gets mediocre results — and first impressions on Show HN don't get a second chance.
