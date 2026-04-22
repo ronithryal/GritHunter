@@ -1,6 +1,6 @@
 # GritHunter v1 — Engineering Log
 
-_Last updated: 2026-04-21_
+_Last updated: 2026-04-22_
 
 ---
 
@@ -21,8 +21,9 @@ _Last updated: 2026-04-21_
 | `githubClient.ts` | ✅ Implemented (no unit tests — covered by route integration tests) |
 | `POST /api/search` | ✅ **M3 COMPLETE** — 13/13 integration tests passing |
 | `GET /api/enrich/[handle]` | ✅ **M3 COMPLETE** — 11/11 integration tests passing |
-| **Total (all suites)** | **✅ 96/96 passing** |
+| **Total (all suites)** | **✅ 110/110 passing** (on `m5` branch) |
 | Frontend | ✅ **M4 COMPLETE** — search flow, evidence cards, states |
+| Search quality | 🔄 **M5 IN PROGRESS** — branch `m5`, pending merge |
 
 ---
 
@@ -430,9 +431,9 @@ Four issues discovered during first live session against real APIs. All fixed be
 
 ---
 
-## M5: Search Quality (NEXT)
+## M5: Search Quality (2026-04-22)
 
-### Status: ⏳ PLANNED
+### Status: 🔄 IN PROGRESS — branch `m5`, pending merge to main
 
 Search results are functional but need tuning before public launch. M5 is dedicated to making the results genuinely impressive — the kind of output a CTO would screenshot and share.
 
