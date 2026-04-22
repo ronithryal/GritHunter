@@ -19,8 +19,6 @@ interface EvalCase {
   expectedHandles?: string[];
   /** Minimum acceptable result count (optional) */
   minResults?: number;
-  /** Mode to use: 'search' | 'similar' */
-  mode?: 'search' | 'similar';
 }
 
 const EVAL_SET: EvalCase[] = [
@@ -43,13 +41,11 @@ const EVAL_SET: EvalCase[] = [
   {
     label: 'Repo similarity — facebook/react-native',
     query: 'https://github.com/facebook/react-native',
-    mode: 'similar',
     minResults: 3,
   },
   {
     label: 'Profile similarity — brentvatne',
     query: 'https://github.com/brentvatne',
-    mode: 'similar',
     expectedHandles: ['kmagiera', 'evanbacon', 'satya164'],
     minResults: 3,
   },
@@ -91,6 +87,7 @@ async function runQuery(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query: evalCase.query }),
+    signal: AbortSignal.timeout(90_000),
   });
   if (!res.ok) {
     console.error(`  [ERROR] ${res.status} ${res.statusText}`);
@@ -159,3 +156,82 @@ async function main() {
 }
 
 main().catch(console.error);
+
+// ── Change 3 Pre-ship Pilot ───────────────────────────────────────────────────
+//
+// Run separately to validate the enrichment prompt before shipping Change 3.
+// Checks that the output:
+//   1. Distinguishes code quality (not just biography)
+//   2. Cites a specific repo URL as evidence
+//   3. Returns parseable JSON with a populated signals array
+//
+// Usage:
+//   EVAL_PILOT=1 npx tsx test/eval/search-quality.eval.ts
+//
+// Manual pass criteria (score each 1=pass / 0=fail):
+//   [ ] summary mentions code quality (error handling, tests, structure, or maintenance)
+//   [ ] summary cites at least one specific repo URL
+//   [ ] signals array has ≥1 entry
+//   [ ] for the less-known dev: output honestly reflects thin public record if applicable
+//
+// If ≥2 of the 3 pilot subjects fail, revert Change 3 — ship Changes 1, 2, 4 only.
+
+const PILOT_HANDLES = [
+  'brentvatne',   // well-known React Native author — should produce rich code quality signal
+  'kmagiera',     // well-known React Native / Reanimated author — same expectation
+  'mmazzarolo',   // less-known dev (appeared in baseline) — tests honest "thin record" handling
+];
+
+async function runEnrichPilot() {
+  console.log('\n════════════════════════════════════════════════════════');
+  console.log(' Change 3 Enrichment Pilot');
+  console.log(` Target: ${BASE_URL}`);
+  console.log(` Time:   ${new Date().toISOString()}`);
+  console.log('════════════════════════════════════════════════════════\n');
+
+  for (const handle of PILOT_HANDLES) {
+    console.log(`▶ ${handle}`);
+    try {
+      const res = await fetch(`${BASE_URL}/api/enrich/${handle}`, {
+        signal: AbortSignal.timeout(90_000),
+      });
+      if (!res.ok) {
+        console.log(`  [ERROR] ${res.status} ${res.statusText}\n`);
+        continue;
+      }
+      const card = await res.json() as {
+        github_handle?: string;
+        summary?: string | null;
+        signals?: { type: string; label: string; url: string }[];
+        error?: string;
+      };
+
+      if (card.error === 'unavailable' || !card.summary) {
+        console.log('  [DEGRADED] enrichment unavailable\n');
+        continue;
+      }
+
+      const signalCount = card.signals?.length ?? 0;
+      const hasRepoUrl = /github\.com\/[^\s]+\/[^\s]+/.test(card.summary);
+
+      console.log(`  Signals: ${signalCount}`);
+      console.log(`  Repo URL cited in summary: ${hasRepoUrl ? '✓' : '✗'}`);
+      console.log(`  Summary:\n${card.summary?.split('\n').map(l => '    ' + l).join('\n')}`);
+      console.log(`\n  Manual checks:`);
+      console.log(`    [ ] mentions code quality (error handling / tests / structure / maintenance)`);
+      console.log(`    [ ] cites a specific repo URL`);
+      console.log(`    [ ] signals array populated`);
+      console.log('');
+    } catch (err) {
+      console.log(`  [FETCH ERROR] ${err}\n`);
+    }
+  }
+
+  console.log('════════════════════════════════════════════════════════');
+  console.log(' If ≥2 of 3 pilot subjects fail manual checks: revert Change 3.');
+  console.log('════════════════════════════════════════════════════════\n');
+}
+
+if (process.env.EVAL_PILOT === '1') {
+  runEnrichPilot().catch(console.error);
+}
