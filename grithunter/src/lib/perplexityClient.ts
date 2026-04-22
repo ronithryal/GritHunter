@@ -181,28 +181,44 @@ async function agentPost(
 export function buildSearchQuery(input: SearchInput): string {
   switch (input.type) {
     case 'nl':
+      // Change 1: soft target instead of hard ceiling.
+      // Change 2: tier/notability language instead of star-count heuristic.
+      // Change 4: domain expansion fallback for niche intersection queries.
       return (
         `${input.value}\n` +
         `Return only individual GitHub developer handles — not organization accounts. ` +
-        `Prioritize developers whose own repositories have earned significant stars (100+). ` +
-        `Limit 10.`
+        `Focus on developers who are well-known, highly cited, or recognized as experts in this domain — ` +
+        `not just developers who happen to work in it. ` +
+        `Prefer developers whose work is referenced or used by others in the field. ` +
+        `Return as many strong matches as you can find (aim for 5–10; more is fine if strong candidates exist). ` +
+        `If fewer than 3 strong matches exist for this exact skill combination, expand slightly: ` +
+        `include developers who are strong in the most important requirements even if they don't cover all of them. ` +
+        `Return them after the exact matches, and note in parentheses which requirement they partially cover. ` +
+        `If zero results exist after expansion, say so directly.`
       );
     case 'profile':
+      // Change 1: soft target. Change 2: impact/citation language.
       return (
         `Find individual software engineers (not GitHub organizations) with similar ` +
         `proof-of-work and open-source contributions to the developer at github.com/${input.value}. ` +
         `Focus on public evidence: repos, packages, blog posts, talks. ` +
-        `Prioritize developers whose own repositories have earned significant stars. ` +
-        `Return only GitHub handles. Limit 10.`
+        `Prioritize developers whose work has had impact beyond their own projects — ` +
+        `used, cited, or referenced by the broader community. ` +
+        `Return only GitHub handles. ` +
+        `Return as many strong matches as you can find (aim for 5–10; more is fine if strong candidates exist).`
       );
     case 'repo':
+      // Change 1: soft target. Change 2: authority/standout language.
       return (
         `Find individual software engineers (not GitHub organizations) who actively work ` +
         `in the same technical domain as github.com/${input.value}. ` +
         `Focus on tech surface area and domain expertise, not the contributor list. ` +
-        `Prioritize developers whose own repositories have earned significant stars. ` +
+        `Find engineers who are considered authorities or standouts in this domain — ` +
+        `maintainers of widely-used libraries, frequent conference speakers, or ` +
+        `developers whose work shapes how others approach this problem space. ` +
         `Exclude maintainers of repositories with more than 10k stars. ` +
-        `Return only GitHub handles. Limit 10.`
+        `Return only GitHub handles. ` +
+        `Return as many strong matches as you can find (aim for 5–10; more is fine if strong candidates exist).`
       );
   }
 }
@@ -258,11 +274,24 @@ export async function agentSearch(
 export async function agentEnrich(
   githubHandle: string,
 ): Promise<PerplexityCallResult> {
+  // Change 3: code quality assessment rubric added to enrichment prompt.
   const payload = {
     input:
       `HANDLE: ${githubHandle}\n` +
-      'Task: synthesize an evidence-based explanation of their technical strengths ' +
-      'and what they have actually built. Cite specific public sources with URLs.\n' +
+      'Task: synthesize an evidence-based explanation of this developer\'s technical ' +
+      'strengths and public work. Include:\n' +
+      '1. What they have built — cite specific repos, packages, or projects with URLs. ' +
+      '\'Built X\' means: they wrote significant portions of it, not a single commit.\n' +
+      '2. Code quality signal — look at their public repositories and assess:\n' +
+      '   - Error handling: do they handle edge cases or just happy-path code?\n' +
+      '   - Test coverage: do their repos include tests?\n' +
+      '   - Project structure: is the codebase consistent and well-organized?\n' +
+      '   - Active maintenance: are issues addressed, PRs reviewed?\n' +
+      '   Cite one specific public example (repo URL) as evidence. ' +
+      '   If their public repos are too thin to assess, state that directly.\n' +
+      '3. Domain depth — are they a specialist in one area or a generalist? ' +
+      '   Provide evidence: \'Contributor to X since Y\' or \'Author of widely-used lib Z\'.\n' +
+      'Signal types for the signals array: repo | blog | npm | talk | so | hn | x\n' +
       'Output JSON: {"github_handle": string, "summary": string, ' +
       '"signals": [{"type": "repo"|"blog"|"npm"|"talk"|"so"|"hn"|"x", "label": string, "url": string}], ' +
       '"location": string}',

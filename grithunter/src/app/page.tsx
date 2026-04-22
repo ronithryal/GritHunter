@@ -113,7 +113,7 @@ export default function Home() {
 
       if (data.handles.length > 0) {
         setIsEnriching(true);
-        const topHandles = data.handles.slice(0, 5);
+        const topHandles = data.handles.slice(0, 10);
         
         // Initialize keys
         const initialCards: Record<string, null> = {};
@@ -135,7 +135,7 @@ export default function Home() {
 
   const hasSearched = hasEverSearched && !isSearching && searchError === null;
   const loadedCount = Object.values(enrichedCards).filter(c => c !== null).length;
-  const targetHandles = handles.slice(0, 5);
+  const targetHandles = handles.slice(0, 10);
 
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-black min-h-screen">

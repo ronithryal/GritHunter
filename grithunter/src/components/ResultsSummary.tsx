@@ -26,8 +26,8 @@ export function ResultsSummary({
   // Only show if we have found anything or are enriching
   if (totalFound === 0 && !isEnriching) return null;
 
-  // The number of cards we ATTEMPT to enrich is min(totalFound, 5)
-  const targetEnrichCount = Math.min(totalFound, 5);
+  // The number of cards we ATTEMPT to enrich is min(totalFound, 10)
+  const targetEnrichCount = Math.min(totalFound, 10);
 
   return (
     <div className="w-full mt-6 mb-4 space-y-2">
@@ -39,7 +39,7 @@ export function ResultsSummary({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between text-sm text-zinc-500">
         <div>
           {loadedCount} of {targetEnrichCount} found
-          {totalFound > 5 && ` (Refined from ${totalFound} partial matches)`}
+          {totalFound > 10 && ` (Refined from ${totalFound} partial matches)`}
         </div>
         {isEnriching && loadedCount < targetEnrichCount && (
           <div className="text-zinc-400 flex items-center gap-2 mt-1 sm:mt-0">

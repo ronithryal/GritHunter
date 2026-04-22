@@ -62,9 +62,10 @@ describe('agentSearch — SearchInput hardening', () => {
     await agentSearch(input);
 
     const body = JSON.parse(fetch.mock.calls[0][1].body);
-    // NL query is passed verbatim with "Return only GitHub handles. Limit 10." appended
+    // M5: NL query now uses soft target + notability language, not hard "Limit 10"
     expect(body.input).toContain('QUERY: React Native engineers in SF who shipped App Store apps');
-    expect(body.input).toContain('Limit 10');
+    expect(body.input).toContain('aim for 5');
+    expect(body.input).not.toContain('Limit 10');
   });
 
   it('constructs profile similarity query from handle', async () => {
