@@ -165,11 +165,9 @@ Before writing a line of application code, the architecture was validated with a
 
 ## Current Implementation Status
 
-**Status: Live**
-- The v1 web app is fully implemented without authentication.
-- M4 frontend search and enrichment experience is live with progressive loading.
-- Search uses the Perplexity Agent API + GitHub API + Upstash Redis as defined in the design spec.
-- Rate limiting and daily cost cap enforced in the backend.
+**Status: Live at https://grithunter.vercel.app**
+
+Search uses the Perplexity Agent API + GitHub API + Upstash Redis. Rate limiting and daily cost cap enforced. All 4 production env vars configured and validated end-to-end.
 
 ### What's Implemented Now
 - **Dual-mode search**: Natural language queries and similarity-by-GitHub URL.
@@ -196,7 +194,7 @@ grithunter/
 └── ...
 ```
 
-**105 / 105 tests passing.** Routes, core library, and frontend complete. Verified against live APIs.
+**126 / 126 tests passing.** Routes, core library, and frontend complete. Verified against live APIs.
 
 ---
 
@@ -207,9 +205,10 @@ grithunter/
 | M1–M2 | Scaffold + core library (41 tests) | ✅ Done |
 | M3 | API routes — search + enrich (24 tests) | ✅ Done |
 | M4 | Frontend — search UI, progressive loading, evidence cards (40 tests) | ✅ Done |
-| M5 | **Search quality** — prompt tuning, re-ranking decision, result evaluation | ⏳ Next |
-| M6 | Design polish — evidence card, UI, responsive layout | ⏳ Planned |
-| M7 | Vercel deployment — production env, rate limiting, E2E validation | ⏳ Planned |
+| M5 | **Search quality** — tier language, enrichment rubric, eval fixture | ✅ Done |
+| M6 | **Search intelligence** — geo scarcity hints, prompt tuning, feedback loop | ⏳ In progress |
+| M7 | **Vercel deployment** — production env, rate limiting, E2E validation | ✅ Done |
+| M8 | **Design and screens** — evidence card visual hierarchy, responsive layout | ⏳ Planned |
 
 ---
 
