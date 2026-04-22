@@ -25,6 +25,7 @@ import { checkRateLimit } from '@/lib/rateLimitCheck';
 import { agentSearch } from '@/lib/perplexityClient';
 import { extractHandles } from '@/lib/extractHandles';
 import { fetchGitHubUser } from '@/lib/githubClient';
+import { detectGeoHint } from '@/lib/detectGeoHint';
 import type { SearchResponse } from '@/lib/types';
 
 // Required for Perplexity Agent API timeout (15s) + 1 retry
@@ -161,10 +162,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .filter((h): h is string => h !== null);
 
   // ── 7. Return result ──────────────────────────────────────────────────────
+  const geoHint =
+    inputType === 'nl' ? detectGeoHint(query, validHandles.length) : undefined;
+
   const response: SearchResponse = {
     handles: validHandles,
     total: validHandles.length,
     detectedMode: inputType,
+    ...(geoHint !== undefined && { geoHint }),
   };
 
   return NextResponse.json(response);
