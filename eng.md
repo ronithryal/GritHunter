@@ -189,12 +189,14 @@ This project uses **milestone commits** — not a commit per change. Only push w
 
 | # | Milestone | What It Includes | Status |
 |---|-----------|-----------------|--------|
-| M1 | **Initial public scaffold + docs** | README, eng.md, product.md, design.md, REVIEW.md, TODOS.md, test-plan.md, Next.js scaffold, Vitest config, precondition.py | ✅ Ready to push |
-| M2 | **Core library complete** | classifyInput, parseEnrichment, topLanguages, rateLimitCheck, perplexityClient — 41/41 tests | ✅ Ready to push (combine with M1 or push separately) |
-| M3 | **API routes complete** | POST /api/search + GET /api/enrich/[handle] + integration tests | ⏳ |
-| M4 | **First working search flow** | Frontend connected to routes; real query returns real cards end-to-end | ⏳ |
-| M5 | **First deployed demo** | Vercel deployment live; demo URL in README | ⏳ |
-| M6 | **Architecture revision (if any)** | If Sonar/Search API are introduced, or major refactor | ⏳ |
+| M1 | **Initial public scaffold + docs** | README, eng.md, product.md, design.md, REVIEW.md, TODOS.md, test-plan.md, Next.js scaffold, Vitest config, precondition.py | ✅ Done |
+| M2 | **Core library complete** | classifyInput, parseEnrichment, topLanguages, rateLimitCheck, perplexityClient — 41/41 tests | ✅ Done |
+| M3 | **API routes complete** | POST /api/search + GET /api/enrich/[handle] + integration tests | ✅ Done |
+| M4 | **First working search flow** | Frontend connected to routes; real query returns real cards end-to-end | ✅ Done |
+| M5 | **Search quality** | Tier/notability language, domain expansion fallback, code quality enrichment rubric, eval fixture | ✅ Done |
+| M6 | **Search intelligence** | Geo-constraint scarcity surfacing, prompt tuning, product feedback loop — ongoing | ⏳ In progress |
+| M7 | **Vercel deployment** | Production env, maxDuration validation, Redis under real IPs, live URL in README | ⏳ Next |
+| M8 | **Design and screens** | Evidence card visual hierarchy, typography, responsive layout, loading skeletons | ⏳ Planned |
 
 ### Push Rules
 - Never push a red test suite
@@ -491,23 +493,26 @@ M5 addressed two failure modes diagnosed during first live usage: tier mismatch 
 
 ---
 
-## M6: Design Polish (NEXT)
+## M6: Search Intelligence (IN PROGRESS)
 
-### Status: ⏳ PLANNED — branch `m6` (not yet started)
+### Status: ⏳ IN PROGRESS — branch `m6`
 
-The evidence card is the product. M6 makes it feel like one. Scope to be defined via `/office-hours` before implementation begins.
+Ongoing search quality and product intelligence layer. Absorbs feedback-driven prompt changes, new hint types, and user-facing signals. This milestone stays open — it is the living edge of the product.
 
-**Anticipated scope:**
-- Evidence card visual design — typography hierarchy, signal tag colors, source citation layout
-- Responsive layout (mobile-readable at minimum)
-- Loading skeleton refinement
-- Empty and error states visual polish
+**Shipped (2026-04-22):**
+- Geo-constraint scarcity surfacing: when a query contains a city/region name and returns ≤2 results, the API returns a `geoHint` field. Surfaces in `EmptyState` (zero results) and `ResultsSummary` (1–2 results). Does not silently change search intent.
+- `detectGeoHint.ts` — 13 unit tests. 126/126 total.
+
+**Anticipated future scope:**
+- Additional hint types as user feedback identifies patterns
+- Prompt tuning iterations informed by eval results
+- Query suggestions or follow-up actions (e.g. "try without location")
 
 ---
 
-## M7: Vercel Deployment (PLANNED)
+## M7: Vercel Deployment (NEXT)
 
-### Status: ⏳ PLANNED
+### Status: ⏳ NEXT
 
 Deploy after the product is worth sharing.
 
@@ -517,4 +522,12 @@ Deploy after the product is worth sharing.
 - Confirm push-to-deploy webhook on merge to main
 - Validate Upstash Redis rate limiting under real production IPs
 - Manual E2E against real APIs: first card within 10s, all 5 within 30s
+
+---
+
+## M8: Design and Screens (PLANNED)
+
+### Status: ⏳ PLANNED
+
+Scope to be defined. The evidence card is the product — M8 makes it feel like one.
 - Prompt injection safety test

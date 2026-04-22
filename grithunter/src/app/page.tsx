@@ -18,6 +18,7 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<SearchError | null>(null);
   const [modeMismatchHint, setModeMismatchHint] = useState<string | null>(null);
+  const [geoHint, setGeoHint] = useState<string | null>(null);
   const [hasEverSearched, setHasEverSearched] = useState(false);
 
   // Abort controller for enrich requests
@@ -70,6 +71,7 @@ export default function Home() {
     setIsSearching(true);
     setSearchError(null);
     setModeMismatchHint(null);
+    setGeoHint(null);
     setHandles([]);
     setTotal(0);
     setEnrichedCards({});
@@ -107,6 +109,11 @@ export default function Home() {
         setModeMismatchHint('That looks like a GitHub URL — switching to Similarity mode behavior.');
       } else if (mode === 'similar' && data.detectedMode === 'nl') {
         setModeMismatchHint('That looks like a search query — switching to Search mode.');
+      }
+
+      // Surface geo scarcity hint when the API detected a location constraint with few results
+      if (data.geoHint) {
+        setGeoHint(data.geoHint);
       }
 
       setIsSearching(false);
@@ -156,15 +163,15 @@ export default function Home() {
         {/* Post-submit states */}
         {hasSearched ? (
           handles.length === 0 ? (
-            <EmptyState />
+            <EmptyState hint={geoHint} />
           ) : (
             <div className="w-full">
-              <ResultsSummary 
+              <ResultsSummary
                 isLoadingSearch={isSearching}
                 isEnriching={isEnriching}
                 loadedCount={loadedCount}
                 totalFound={total}
-                modeMismatchHint={modeMismatchHint}
+                modeMismatchHint={modeMismatchHint ?? geoHint}
               />
               
               <div className="w-full flex flex-col gap-4">

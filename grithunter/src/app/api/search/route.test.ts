@@ -288,4 +288,44 @@ describe('POST /api/search', () => {
     const res = await POST(makeRequest(''));
     expect(res.status).toBe(400);
   });
+
+  it('includes geoHint when NL query has location term and ≤2 results', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(perplexityResponse('@brentvatne'))
+      .mockResolvedValue(githubUserOk('brentvatne')),
+    );
+
+    const res = await POST(makeRequest('React Native engineers in SF who shipped App Store apps'));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.geoHint).toBeDefined();
+    expect(body.geoHint).toContain('location filter');
+  });
+
+  it('omits geoHint when NL query has location term but enough results', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(perplexityResponse('@a\n@b\n@c'))
+      .mockResolvedValue(githubUserOk('any')),
+    );
+
+    const res = await POST(makeRequest('React Native engineers in SF'));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.geoHint).toBeUndefined();
+  });
+
+  it('omits geoHint when NL query has no location term', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(perplexityResponse('@brentvatne'))
+      .mockResolvedValue(githubUserOk('brentvatne')),
+    );
+
+    const res = await POST(makeRequest('Go engineers who built Prometheus exporters'));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.geoHint).toBeUndefined();
+  });
 });

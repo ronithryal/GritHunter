@@ -1,6 +1,6 @@
 # GritHunter v1 — Product Log
 
-_Last updated: 2026-04-21_
+_Last updated: 2026-04-22_
 
 ---
 
@@ -26,14 +26,16 @@ NOT the initial user: technical recruiters (optimize for volume/velocity, don't 
 
 | Feature | Status |
 |---------|--------|
-| Semantic search (natural language → developers) | ⏳ Planned |
-| Similarity search, repo URL → similar devs in same domain | ⏳ Planned |
-| Similarity search, profile URL → devs with similar proof-of-work | ⏳ Planned |
-| Per-result evidence card: Perplexity WHY paragraph + typed signal tags | ⏳ Planned |
-| "Last verified" timestamp on evidence card (from 24h enrichment cache) | ⏳ Planned |
-| Location (from GitHub profile or conference inference) | ⏳ Planned |
-| "5 of N found" result counter | ⏳ Planned |
-| Anonymous usage; rate-limited (10 queries/session/hour) by IP | ⏳ Planned |
+| Semantic search (natural language → developers) | ✅ Live |
+| Similarity search, repo URL → similar devs in same domain | ✅ Live |
+| Similarity search, profile URL → devs with similar proof-of-work | ✅ Live |
+| Per-result evidence card: Perplexity WHY paragraph + typed signal tags | ✅ Live |
+| "Last verified" timestamp on evidence card (from 24h enrichment cache) | ✅ Live |
+| Location (from GitHub profile or Perplexity inference) | ✅ Live |
+| "N of M found" result counter (up to 10 results) | ✅ Live |
+| Anonymous usage; rate-limited (10 queries/session/hour) by IP | ✅ Live |
+| Geo-constraint scarcity hint ("engineers in SF" → explains global distribution) | ✅ Live |
+| Mode mismatch hint (URL typed in wrong mode) | ✅ Live |
 
 ## v1 Scope — What's NOT In
 
@@ -104,16 +106,20 @@ CI/CD: Vercel push-to-deploy on merge to main.
 | 2026-04-21 | Core library complete: input classification, enrichment parsing, rate limiting, Perplexity client. 41/41 tests. |
 | 2026-04-21 | API routes shipped: `POST /api/search` and `GET /api/enrich/[handle]`. 96/96 tests. |
 | 2026-04-21 | Frontend shipped: search flow, progressive card loading, degraded states, mode hints. 104/104 tests. |
-| 2026-04-21 | **Search quality pass:** Organizations are now filtered from results at the GitHub API validation layer. Search prompts updated to bias Perplexity toward high-signal individual developers (repos with significant stars). |
-| 2026-04-21 | **Reliability fixes:** Enrichment timeout raised to 28s per attempt (was 15s — caused ~2/5 cards to show "Evidence unavailable" on slow Perplexity calls). Degraded card cache TTL cut from 24h to 5min so transient failures recover automatically. Redis cache deserialization bug fixed. |
+| 2026-04-21 | **Search quality pass:** Organizations filtered at GitHub validation. Prompts updated to bias toward high-signal individual developers. |
+| 2026-04-21 | **Reliability fixes:** Enrichment timeout raised to 28s (was 15s). Degraded card cache TTL cut to 5min. Redis cache deserialization bug fixed. |
+| 2026-04-22 | **M5 — Search quality:** Tier/notability language replaces star-count heuristic. Hard "Limit 10" ceiling removed (soft target). Domain expansion fallback for niche intersection queries. Code quality enrichment rubric (error handling, tests, project structure, maintenance). Eval fixture added. Result cap raised to 10. 110/110 tests. |
+| 2026-04-22 | **M6 — Search intelligence (initial):** Geo-constraint scarcity surfacing. When a city/region name appears in the query and ≤2 results are returned, the API surfaces an honest hint ("top engineers in this space are globally distributed") rather than silently widening the search. Appears in EmptyState (zero results) and ResultsSummary (1–2 results). 126/126 tests. |
 
 ---
 
-## What's Working Today (as of 2026-04-21)
+## What's Working Today (as of 2026-04-22)
 
-A user can visit the app, type a description like "React Native engineers in San Francisco who shipped App Store apps," and within 30 seconds see up to 5 evidence cards — each with a Perplexity-synthesized paragraph explaining *why* that developer matches, backed by cited public sources. Cards load progressively as they resolve; the first typically appears within 10 seconds.
+A user can visit the app, type a description like "React Native engineers in San Francisco who shipped App Store apps," and within 30 seconds see up to 10 evidence cards — each with a Perplexity-synthesized paragraph explaining *why* that developer matches, backed by cited public sources. Cards load progressively as they resolve; the first typically appears within 10 seconds.
 
-The system is fully live against real APIs (Perplexity, GitHub, Upstash Redis). Rate limiting and spend caps are active. The app handles degraded states gracefully: if enrichment fails for one developer, that card shows a recoverable error without blocking the other four.
+The system is fully live against real APIs (Perplexity, GitHub, Upstash Redis). Rate limiting and spend caps are active. The app handles degraded states gracefully: if enrichment fails for a developer, that card shows a recoverable error without blocking the others.
+
+When geo-constrained queries return few results (e.g. "React Native engineers in SF"), the app now surfaces an honest explanation — top engineers in most domains are globally distributed — rather than returning a confusing empty state or silently widening the search.
 
 ---
 
@@ -124,8 +130,9 @@ The system is fully live against real APIs (Perplexity, GitHub, Upstash Redis). 
 | M1–M2 | Scaffold + core library | Foundation, 41 unit tests | ✅ Done |
 | M3 | API routes | Search + enrich pipelines live | ✅ Done |
 | M4 | Frontend | Search UI, progressive loading, evidence cards | ✅ Done |
-| M5 | Search quality | Results good enough to impress on first use | ⏳ Next |
-| M6 | Design polish | Evidence card and UI feel product-grade | ⏳ Planned |
-| M7 | Vercel deployment | Live URL, production env, rate limiting validated | ⏳ Planned |
+| M5 | Search quality | Tier language, enrichment rubric, eval fixture | ✅ Done |
+| M6 | Search intelligence | Scarcity hints, prompt tuning, feedback-driven improvements | ⏳ In progress |
+| M7 | Vercel deployment | Live URL, production env, rate limiting validated | ⏳ Next |
+| M8 | Design and screens | Evidence card visual hierarchy, typography, responsive layout | ⏳ Planned |
 
-The order matters. Deploying before M5 means the first person who tries it gets mediocre results — and first impressions on Show HN don't get a second chance.
+M6 stays open — it absorbs feedback. M7 ships when the product is worth sharing publicly.
