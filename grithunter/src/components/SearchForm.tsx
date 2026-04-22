@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { SearchMode } from './ModeToggle';
 
 interface SearchFormProps {
   mode: SearchMode;
   onSubmit: (query: string) => void;
   isLoading: boolean;
+  query: string;
+  onQueryChange: (query: string) => void;
 }
 
-export function SearchForm({ mode, onSubmit, isLoading }: SearchFormProps) {
-  const [query, setQuery] = useState('');
-
+export function SearchForm({ mode, onSubmit, isLoading, query, onQueryChange }: SearchFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
@@ -27,7 +27,7 @@ export function SearchForm({ mode, onSubmit, isLoading }: SearchFormProps) {
       <input
         type="text"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => onQueryChange(e.target.value)}
         placeholder={placeholder}
         disabled={isLoading}
         className="w-full p-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all disabled:opacity-50"

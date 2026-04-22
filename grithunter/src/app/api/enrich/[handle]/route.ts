@@ -112,17 +112,20 @@ export async function GET(
   if (redis) {
     const cached = await readCache(redis, handle);
     if (cached) {
+      console.log(`[enrich] cache hit: ${handle}`);
       return NextResponse.json(cached);
     }
   }
 
   // ── 2. Call Perplexity enrichment ─────────────────────────────────────────
+  console.log(`[enrich] cache miss — calling Perplexity for: ${handle}`);
   let perplexityContent: string;
   let enrichFailed = false;
 
   try {
     const result = await agentEnrich(handle);
     perplexityContent = result.content;
+    console.log(`[enrich] Perplexity ok for ${handle} (${result.content.length} chars)`);
   } catch (err) {
     console.error(`[enrich] Perplexity agentEnrich failed for ${handle}:`, err);
     enrichFailed = true;
@@ -133,6 +136,7 @@ export async function GET(
   const now = new Date().toISOString();
 
   if (enrichFailed) {
+    console.warn(`[enrich] returning degraded card for ${handle}`);
     const degraded: EvidenceCard = {
       github_handle: handle,
       summary: null,
@@ -171,6 +175,8 @@ export async function GET(
 
   // ── 6. Write to cache ─────────────────────────────────────────────────────
   if (redis) await writeCache(redis, handle, card);
+
+  console.log(`[enrich] assembled card for ${handle}: signals=${card.signals.length} followers=${card.followers ?? 'n/a'} location=${card.location ?? 'n/a'}`);
 
   // ── 7. Return ─────────────────────────────────────────────────────────────
   return NextResponse.json(card);

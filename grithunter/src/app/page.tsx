@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ModeToggle, SearchMode } from '@/components/ModeToggle';
 import { SearchForm } from '@/components/SearchForm';
+import { QueryTips } from '@/components/QueryTips';
 import { ResultsSummary } from '@/components/ResultsSummary';
 import { DeveloperCard } from '@/components/DeveloperCard';
 import { EmptyState } from '@/components/EmptyState';
@@ -13,7 +14,8 @@ type SearchError = '429' | '503' | 'search_failed' | 'invalid_url';
 
 export default function Home() {
   const [mode, setMode] = useState<SearchMode>('search');
-  
+  const [query, setQuery] = useState('');
+
   // Search State
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<SearchError | null>(null);
@@ -154,11 +156,22 @@ export default function Home() {
             GritHunter
           </h1>
           <ModeToggle mode={mode} onChange={setMode} />
-          <SearchForm mode={mode} onSubmit={handleSearchSubmit} isLoading={isSearching} />
+          <SearchForm
+            mode={mode}
+            onSubmit={handleSearchSubmit}
+            isLoading={isSearching}
+            query={query}
+            onQueryChange={setQuery}
+          />
         </div>
 
         {/* Global Errors */}
         {searchError && <ErrorState errorType={searchError} />}
+
+        {/* Pre-search tips — shown only before first search */}
+        {!hasEverSearched && !isSearching && mode === 'search' && (
+          <QueryTips onExampleClick={(ex) => { setQuery(ex); handleSearchSubmit(ex); }} />
+        )}
 
         {/* Post-submit states */}
         {hasSearched ? (

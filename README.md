@@ -198,6 +198,66 @@ grithunter/
 
 ---
 
+## Writing Good Queries
+
+GritHunter uses Perplexity to reason over public evidence — GitHub repos, npm packages, conference talks, blog posts, open-source contributions. The richer the public signal for a skill or domain, the better the results.
+
+**The rule:** describe what they built, not what they've experienced.
+
+"What would this person's GitHub profile actually show?" If the answer is a repo, a library, or a contribution history — that's a good query. If the answer is a performance review or a war story — rephrase it.
+
+---
+
+### What works well
+
+| Query | Why it works |
+|-------|-------------|
+| `React Native engineers who shipped App Store apps` | App Store presence and RN repos are publicly verifiable |
+| `contributors to the TypeScript compiler or language tooling` | Contribution history is public on GitHub |
+| `engineers who built open-source developer tools in Go` | Repos, stars, and usage are all observable |
+| `Python ML engineers who publish research code on GitHub` | Research repos, notebooks, and citations are findable |
+| `authors of widely-used Rust async or systems libraries` | crates.io downloads + GitHub activity = strong signal |
+| `engineers who maintain Kubernetes operators or Helm charts` | Public repos + contributor history = findable |
+
+---
+
+### Rephrasing guide
+
+**Experience descriptors → technology artifacts**
+
+| Instead of | Try |
+|------------|-----|
+| "devs who can scale apps to millions of users" | "engineers who maintain Kubernetes schedulers, wrote cloud-native infra tooling, or contributed to distributed systems projects" |
+| "engineers who've led large systems redesigns" | "engineers who authored technical deep-dives on system architecture or maintain widely-used infrastructure libraries" |
+| "senior engineers who are good at architecture" | "engineers who author design docs, technical blog posts, or libraries others build on top of" |
+
+**Role titles → domain artifacts**
+
+| Instead of | Try |
+|------------|-----|
+| "DevOps engineers with infra experience" | "contributors to Terraform providers, Helm charts, or cloud-native CNCF projects" |
+| "ML engineers who understand production" | "engineers who authored ML serving frameworks, inference tooling, or wrote about ML systems at scale" |
+| "full-stack engineers who ship fast" | "engineers who built and open-sourced products with real community adoption" |
+
+**Soft skills have no public proxy** — "good communicators," "team players," "fast learners" — rephrase into observable artifacts (blog posts, talks, community engagement) or skip the filter.
+
+---
+
+### Location constraints
+
+GritHunter searches globally. Top engineers in most domains are spread across Vancouver, London, Berlin, São Paulo, and Kraków as much as San Francisco. If you add a city to your query you may get few results — not because good engineers don't exist there, but because the strongest public signal is globally distributed. GritHunter will tell you when this is happening. Search without location first, then filter manually.
+
+---
+
+### Similarity mode
+
+Paste a GitHub profile or repo URL to find developers with similar proof-of-work.
+
+- **Profile URL** (`github.com/brentvatne`): finds engineers with a similar contribution history and domain footprint
+- **Repo URL** (`github.com/facebook/react-native`): finds engineers active in the same technical domain — not just contributors, but domain authorities
+
+---
+
 ## Roadmap
 
 | # | Milestone | Status |

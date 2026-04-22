@@ -127,6 +127,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // ── 4. Call Perplexity Agent API ──────────────────────────────────────────
+  console.log(`[search] query="${query}" mode=${inputType} ip=${ip}`);
+
   let perplexityContent: string;
   try {
     const result = await agentSearch({ type: inputType, value });
@@ -141,8 +143,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // ── 5. Extract GitHub handles ─────────────────────────────────────────────
   const rawHandles = extractHandles(perplexityContent);
+  console.log(`[search] perplexity returned ${rawHandles.length} raw handles: [${rawHandles.join(', ')}]`);
 
   if (rawHandles.length === 0) {
+    console.log('[search] no handles extracted — returning empty');
     return NextResponse.json({ handles: [], total: 0 } satisfies SearchResponse);
   }
 
@@ -160,6 +164,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const validHandles = validationResults
     .map((r) => (r.status === 'fulfilled' ? r.value : null))
     .filter((h): h is string => h !== null);
+
+  console.log(`[search] github validation: ${validHandles.length}/${rawHandles.length} passed — [${validHandles.join(', ')}]`);
 
   // ── 7. Return result ──────────────────────────────────────────────────────
   const geoHint =
