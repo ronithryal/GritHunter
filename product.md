@@ -50,6 +50,40 @@ NOT the initial user: technical recruiters (optimize for volume/velocity, don't 
 - Resume parsing or LinkedIn scraping
 - Availability inference
 
+### More results
+
+v1 returns up to 10 results per search. The ceiling isn't a technical hard limit — it's a deliberate v1 constraint. Perplexity can return more candidates; the cost is GitHub validation latency and enrichment spend per card. The right model for "more results" is lazy: return 10 immediately, let the user request more on demand, only enrich cards that are actually viewed. Pagination or a "load 10 more" button is the natural next step.
+
+### If this were a paid product
+
+The core evidence engine — live Perplexity reasoning over the public web, per-developer cards, GitHub metadata — is the defensible layer. Everything below is workflow and distribution built on top of it.
+
+**Search depth**
+- 25–50 results with lazy enrichment as cards scroll into view
+- Post-search filters (language, location, follower count) without re-querying Perplexity
+- Multi-run merge: query with different phrasings, deduplicate by handle, surface the union — higher recall for niche domains
+
+**Workflow**
+- Saved searches with weekly email or Slack diffs ("3 new matches since last week")
+- Candidate pipeline: drag developers from search into Screening / Outreach / Passed lists
+- Side-by-side developer comparison
+- Bulk export to CSV, Notion, or Google Sheets
+- ATS push: send a card directly to Greenhouse, Lever, or Ashby with one click
+
+**Team features**
+- Shared workspaces: CTO and recruiter see the same pipeline and cards
+- Comments and notes on developer cards
+- Activity log: who searched what, who moved whom
+
+**Developer-facing**
+- Profile claiming: a developer can correct the AI-generated summary or opt out entirely
+- "Open to work" badge: developer-controlled, surfaced as a signal on the card
+
+**Intelligence upgrades**
+- Feedback loop: mark a card as "good match" or "not a fit"; use those signals to tune prompt framing for future queries on the same account — no retraining, just prompt-level personalization
+- Rising engineers: re-run the same query weekly and diff results to surface people before they're well-known
+- Private signal blending: connect GitHub stars, a personal CRM, or previous hires to influence ranking
+
 ---
 
 ## Success Criteria

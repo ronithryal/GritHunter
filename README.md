@@ -61,6 +61,49 @@ Each result surfaces an **Evidence Card**:
 - Resume parsing or LinkedIn scraping
 - Availability inference
 
+### More results
+
+v1 returns up to 10 results per query. Returning more — pagination, "load more," or a
+higher ceiling — is a deliberate future upgrade. Perplexity's Agent API can surface more
+candidates; the bottleneck is GitHub validation latency (parallel, but each is a network
+round-trip) and enrichment cost per card. The right model for "more results" is probably
+lazy loading: return 10 immediately, let the user request the next page on demand, and
+only enrich cards that are actually viewed.
+
+### If this were a paid product
+
+The v1 free tier is intentionally minimal — one input, one output, no account. A
+commercial version would layer on top of the same core evidence engine:
+
+**Search depth**
+- Result counts of 25–50, with lazy enrichment as cards scroll into view
+- Filters applied post-search (language, location, follower count) without re-querying Perplexity
+- Re-run with different prompt strategies and merge/deduplicate across runs for higher recall
+
+**Workflow**
+- Saved searches with email or Slack alerts when new matches appear
+- Candidate pipeline: move developers from search results into lists (Screening, Outreach, Passed)
+- Side-by-side developer comparison
+- Bulk CSV / Notion / Google Sheets export
+- ATS integration: push a card directly to Greenhouse, Lever, or Ashby
+
+**Team features**
+- Shared workspaces: the CTO and recruiter see the same pipeline
+- Comments and notes attached to developer cards
+- Activity log: who searched what, who moved whom through the pipeline
+
+**Developer-facing**
+- Profile claiming: a developer can add context, correct the AI-generated summary, or opt out
+- "Open to work" signal: developers can flag availability; surfaced as a badge on the card
+
+**Intelligence**
+- Feedback loop: the user marks a card as "good match" or "not a fit"; those signals tune
+  future query weights without retraining (prompt-level personalization)
+- Historical search index: re-run the same query weekly and diff the results to surface
+  rising engineers before they're well-known
+- Private signal integration: if the user connects GitHub stars, follows, or a private
+  CRM, blend those signals into the ranking
+
 ---
 
 ## Architecture
