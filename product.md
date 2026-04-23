@@ -83,6 +83,7 @@ The core evidence engine — live Perplexity reasoning over the public web, per-
 - Feedback loop: mark a card as "good match" or "not a fit"; use those signals to tune prompt framing for future queries on the same account — no retraining, just prompt-level personalization
 - Rising engineers: re-run the same query weekly and diff results to surface people before they're well-known
 - Private signal blending: connect GitHub stars, a personal CRM, or previous hires to influence ranking
+- Deep search mode: Perplexity's Agent API supports a `deep-research` preset alongside `pro-search`. v1 uses `pro-search` (fast, ~$0.02/call). `deep-research` runs longer multi-hop reasoning and would meaningfully improve results for hard queries — niche domain intersections, experience-based queries like "engineers who've scaled systems from thousands to millions of users." The tradeoff is cost and latency. The right product move is a paid "Deep Search" tier where the user explicitly opts in and the higher spend per query is justified by the result quality.
 
 ---
 
